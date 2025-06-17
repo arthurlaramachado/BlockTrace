@@ -5,6 +5,7 @@ builders/
 
 # stores genesis block, which should not be uploaded
 blockchain/artifacts/*
+!blockchain/artifacts/.gitkeep
 
 # peer and orderer organizarion config created automatically
 blockchain/organizations/peerOrganizations
