@@ -1,0 +1,11 @@
+# Files created after runing install-fabric.sh
+config/
+bin/
+builders/
+
+# stores genesis block, which should not be uploaded
+blockchain/artifacts/*
+
+# peer and orderer organizarion config created automatically
+blockchain/organizations/peerOrganizations
+blockchain/organizations/ordererOrganizations
