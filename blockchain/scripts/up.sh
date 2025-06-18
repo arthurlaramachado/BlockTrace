@@ -169,4 +169,43 @@ function networkUp() {
   successln "Network successfully initialized!"
 }
 
-networkUp
+function checkAllContainersRunning() {
+  local container_ids
+  container_ids=$(< "${ROOTDIR}/container_ids.txt")
+
+  local all_running=true
+
+  echo ""
+  while read -r id; do
+    local status
+    status=$($CONTAINER_CLI inspect -f '{{.State.Status}}' "$id" 2>/dev/null)
+
+    infoln "Testing container $id..."
+    if [ "$status" != "running" ]; then
+      errorln "Container $id is NOT running (status: $status)\n"
+      all_running=false
+    else
+      successln "Container $id is running\n"
+    fi
+  done <<< "$container_ids"
+
+  if [ "$all_running" = true ]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+function isNetworkUp {
+  if checkAllContainersRunning; then
+    successln "All containers are running!\n"
+    return 0
+  else
+    fatalln "Some containers are not running.\n"
+    return 1
+  fi
+}
+
+
+
+isNetworkUp
