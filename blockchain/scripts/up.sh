@@ -6,6 +6,7 @@
 
 # Todo:
 # Allow for Fabric CAs
+# Implement CouchDB
 
 # ensures absolute path doesnt matter where script is called from
 ROOTDIR=$(cd "$(dirname "$0")" && pwd)
@@ -18,8 +19,13 @@ trap "popd > /dev/null" EXIT
 
 . ./utils.sh
 
+## VARIABLES
 CONTAINER_CLI="docker"
 CONTAINER_CLI_COMPOSE="${CONTAINER_CLI} compose"
+COMPOSE_FILE_BASE=compose-net.yaml
+# Get docker sock path from environment variable
+SOCK="${DOCKER_HOST:-/var/run/docker.sock}"
+DOCKER_SOCK="${SOCK##unix://}"
 
 function checkDockerAndCompose {
     infoln "🔍 Checking Docker installation..."
@@ -112,3 +118,34 @@ function createOrgs() {
     ./ccp-generate.sh
     successln "CPP successfully created"
 }
+
+function networkUp() {
+  checkDockerAndCompose
+
+  # generate artifacts if they don't exist
+  if [ ! -d "${ROOTDIR}/../organizations/peerOrganizations" ]; then
+    createOrgs
+  fi
+
+  echo ""
+  infoln "🐳 Initializing docker containers"
+  #Executes the command to create containers based on compose-net.yaml instructions
+  COMPOSE_FILES="-f ${ROOTDIR}/../compose/${COMPOSE_FILE_BASE} -f ${ROOTDIR}/../compose/${CONTAINER_CLI}/${CONTAINER_CLI}-${COMPOSE_FILE_BASE}"
+  DOCKER_SOCK="${DOCKER_SOCK}" ${CONTAINER_CLI_COMPOSE} ${COMPOSE_FILES} up -d 2>&1
+  
+  if [ $? -ne 0 ]; then
+    fatalln "Unable to start network"
+  fi
+
+  #if [ "${DATABASE}" == "couchdb" ]; then
+  #  COMPOSE_FILES="${COMPOSE_FILES} -f compose/${COMPOSE_FILE_COUCH} -f compose/${CONTAINER_CLI}/${CONTAINER_CLI}-${COMPOSE_FILE_COUCH}"
+  #fi
+
+  $CONTAINER_CLI ps -a
+
+  echo ""
+  infoln "🚀 Containers successfully launched"
+  successln "Network successfully initialized!"
+}
+
+networkUp
