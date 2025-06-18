@@ -22,13 +22,13 @@ CONTAINER_CLI="docker"
 CONTAINER_CLI_COMPOSE="${CONTAINER_CLI} compose"
 
 function checkDockerAndCompose {
-    echo "🔍 Checking Docker installation..."
+    infoln "🔍 Checking Docker installation..."
 
     if ! command -v docker &> /dev/null; then
         fatalln "Docker is not installed or not in PATH."
     fi
 
-    echo "🔍 Checking Docker Compose installation..."
+    infoln "🔍 Checking Docker Compose installation..."
 
     if ! docker compose version &> /dev/null; then
         if ! docker-compose version &> /dev/null; then
@@ -108,8 +108,7 @@ function createOrgs() {
     successln "Orderer successfully created!"
 
     echo ""
-    infoln "🏗️  Generating CCP files for Org1 and Org2"
-    
+    infoln "🏗️  Generating Connection Profile (CPP) files for Org1 and Org2"
+    ./ccp-generate.sh
+    successln "CPP successfully created"
 }
-
-createOrgs
