@@ -47,6 +47,19 @@ function checkDockerAndCompose {
     successln "Docker is correctly installed. Moving forward..."
 }
 
+function saveNewContainerIds() {
+  local before="$1"
+  local after="$2"
+  local output_file="${ROOTDIR}/container_ids.txt"
+
+  # Calcula os novos container IDs
+  local new_ids
+  new_ids=$(comm -13 <(echo "$before" | sort) <(echo "$after" | sort))
+
+  # Salva no arquivo, adicionando ao final
+  printf "%s\n" $new_ids >> "$output_file"
+}
+
 # Obtain CONTAINER_IDS and remove them
 # This function is called when you bring a network down
 function clearContainers() {
@@ -127,6 +140,9 @@ function networkUp() {
     createOrgs
   fi
 
+  # Get list of container IDs BEFORE
+  containers_before=$(docker ps -aq)
+
   echo ""
   infoln "🐳 Initializing docker containers"
   #Executes the command to create containers based on compose-net.yaml instructions
@@ -136,6 +152,11 @@ function networkUp() {
   if [ $? -ne 0 ]; then
     fatalln "Unable to start network"
   fi
+
+  # Get list of container IDs AFTER
+  containers_after=$(docker ps -aq)
+
+  saveNewContainerIds "$containers_before" "$containers_after"
 
   #if [ "${DATABASE}" == "couchdb" ]; then
   #  COMPOSE_FILES="${COMPOSE_FILES} -f compose/${COMPOSE_FILE_COUCH} -f compose/${CONTAINER_CLI}/${CONTAINER_CLI}-${COMPOSE_FILE_COUCH}"

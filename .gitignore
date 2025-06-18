@@ -10,3 +10,6 @@ blockchain/artifacts/*
 # peer and orderer organizarion config created automatically
 blockchain/organizations/peerOrganizations
 blockchain/organizations/ordererOrganizations
+
+# container ids for control of your ouw network
+blockchain/scripts/container_ids.txt
