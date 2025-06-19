@@ -1,4 +1,10 @@
 #!/bin/bash
+#
+# Copyright IBM Corp. and Hyperledger Fabric contributors
+# Adapted by Arthur de Lara Machado
+#
+# SPDX-License-Identifier: Apache-2.0
+#
 
 # Notes:
 # The actual version of the projects uses cryptogen, which is a tool that is
@@ -7,9 +13,11 @@
 # Todo:
 # Allow for Fabric CAs
 # Implement CouchDB
+# Implement networkDown and add to createChannel logic
 
 # ensures absolute path doesnt matter where script is called from
-ROOTDIR=$(cd "$(dirname "$0")" && pwd)
+getRootDir
+ROOTDIR=$?
 export PATH=${ROOTDIR}/../bin:${PWD}/../bin:$PATH
 export FABRIC_CFG_PATH=${ROOTDIR}/configtx
 
@@ -26,26 +34,6 @@ COMPOSE_FILE_BASE=compose-net.yaml
 # Get docker sock path from environment variable
 SOCK="${DOCKER_HOST:-/var/run/docker.sock}"
 DOCKER_SOCK="${SOCK##unix://}"
-
-function checkDockerAndCompose {
-    infoln "🔍 Checking Docker installation..."
-
-    if ! command -v docker &> /dev/null; then
-        fatalln "Docker is not installed or not in PATH."
-    fi
-
-    infoln "🔍 Checking Docker Compose installation..."
-
-    if ! docker compose version &> /dev/null; then
-        if ! docker-compose version &> /dev/null; then
-            fatalln "No version of Docker Compose found."
-        else
-            fatalln "⚠️ Legacy Docker Compose is installed, but it's not supported by this script."
-        fi
-    fi
-
-    successln "Docker is correctly installed. Moving forward..."
-}
 
 function saveNewContainerIds() {
   local before="$1"
@@ -206,6 +194,23 @@ function isNetworkUp {
   fi
 }
 
+function createChannel {
+  isNetworkUp
+  networkState=$?
 
+  if ! $networkState; then
+    fatalln "Network is down, plese run the network first!"
+  fi
 
-isNetworkUp
+  if [[ $networkState -eq 0 ]] && [[ ! -d "${ROOTDIR}/../organizations/peerOrganizations" ]]; then
+    warnln "🔁 Restarting network to sync certs..."
+    #networkDown
+  else
+    successln "Network running and certs synced!\n" 
+  fi
+
+  #Runs the script that creates a Channel
+  createChannel.sh  
+}
+
+checkDockerAndCompose

@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+#
+# Copyright IBM Corp. and Hyperledger Fabric contributors
+# Adapted by Arthur de Lara Machado
+#
+# SPDX-License-Identifier: Apache-2.0
+#
 
 ### This script creates the Connection Profiles
 

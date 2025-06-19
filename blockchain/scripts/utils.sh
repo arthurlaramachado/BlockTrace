@@ -1,3 +1,10 @@
+#
+# Copyright IBM Corp. and Hyperledger Fabric contributors
+# Adapted by Arthur de Lara Machado
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
 C_RESET='\033[0m'
 C_RED='\033[0;31m'
 C_GREEN='\033[0;32m'
@@ -35,7 +42,34 @@ function fatalln() {
   exit 1
 }
 
+function checkDockerAndCompose {
+    infoln "🔍 Checking Docker installation..."
+
+    if ! command -v docker &> /dev/null; then
+        fatalln "Docker is not installed or not in PATH."
+    fi
+
+    infoln "🔍 Checking Docker Compose installation..."
+
+    if ! docker compose version &> /dev/null; then
+        if ! docker-compose version &> /dev/null; then
+            fatalln "No version of Docker Compose found."
+        else
+            fatalln "⚠️ Legacy Docker Compose is installed, but it's not supported by this script."
+        fi
+    fi
+
+    successln "Docker is correctly installed. Moving forward..."
+}
+
+function getRootDir {
+  ROOTDIR=$(cd "$(dirname "$0")" && pwd)
+  return $ROOTDIR
+}
+
 export -f errorln
 export -f successln
 export -f infoln
 export -f warnln
+export -f checkDockerAndCompose
+export -f getRootDir
