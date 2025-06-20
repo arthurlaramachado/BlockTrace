@@ -13,3 +13,6 @@ blockchain/organizations/ordererOrganizations
 
 # container ids for control of your ouw network
 blockchain/scripts/container_ids.txt
+
+# Used to store log errors or informations in scripts
+blockchain/scripts/log.txt

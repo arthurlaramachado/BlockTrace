@@ -16,10 +16,9 @@
 # Implement networkDown and add to createChannel logic
 
 # ensures absolute path doesnt matter where script is called from
-getRootDir
-ROOTDIR=$?
+ROOTDIR=$(cd "$(dirname "$0")" && pwd)
 export PATH=${ROOTDIR}/../bin:${PWD}/../bin:$PATH
-export FABRIC_CFG_PATH=${ROOTDIR}/configtx
+export FABRIC_CFG_PATH=${ROOTDIR}/../configtx
 
 # push to the required directory & set a trap to go back if needed
 pushd ${ROOTDIR} > /dev/null
@@ -210,7 +209,5 @@ function createChannel {
   fi
 
   #Runs the script that creates a Channel
-  createChannel.sh  
+  ./createChannel.sh
 }
-
-checkDockerAndCompose

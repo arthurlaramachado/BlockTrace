@@ -62,14 +62,8 @@ function checkDockerAndCompose {
     successln "Docker is correctly installed. Moving forward..."
 }
 
-function getRootDir {
-  ROOTDIR=$(cd "$(dirname "$0")" && pwd)
-  return $ROOTDIR
-}
-
 export -f errorln
 export -f successln
 export -f infoln
 export -f warnln
 export -f checkDockerAndCompose
-export -f getRootDir
