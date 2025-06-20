@@ -59,6 +59,7 @@ Organizations:
         Rule: "OR('Org2MSP.peer')"
 
 Capabilities:
+  Channel: &ChannelCapabilities
     V2_0: true
   Orderer: &OrdererCapabilities
     V2_0: true

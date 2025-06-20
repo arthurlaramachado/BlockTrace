@@ -22,8 +22,6 @@ CONTAINER_CLI="$5"
 : ${CONTAINER_CLI:="docker"}
 
 ROOTDIR=$(cd "$(dirname "$0")" && pwd)
-
-FABRIC_CFG_PATH=${ROOTDIR}/../config/
 BLOCKFILE="${ROOTDIR}/../artifacts/${CHANNEL_NAME}.block"
 
 infoln "🛰️	Starting Channel Creation\n"
@@ -39,6 +37,8 @@ function createChannelGenesisBlock {
     infoln "🧱 Creating genesis block!"
 
     setGlobals 1 --verbose
+
+    export FABRIC_CFG_PATH="${ROOTDIR}/../configtx/"
 
     which configtxgen
 	if [ "$?" -ne 0 ]; then
@@ -64,7 +64,7 @@ function createChannel {
 		sleep $DELAY
 		set -x
 
-        . ./orderer.sh ${CHANNEL_NAME}> /dev/null 2>&1
+    . ./orderer.sh ${CHANNEL_NAME}> /dev/null 2>&1
 		res=$?
 
 		{ set +x; } 2>/dev/null
@@ -79,6 +79,7 @@ function createChannel {
 
 joinChannel() {
     ORG=$1
+    FABRIC_CFG_PATH="${ROOTDIR}/../config/"
     setGlobals $ORG
 	local rc=1
 	local COUNTER=1
@@ -123,7 +124,7 @@ createChannel
 joinChannel 1
 joinChannel 2
 
-## Set the anchor peers for each org in the channel
+# Set the anchor peers for each org in the channel
 setAnchorPeer 1
 setAnchorPeer 2
 
