@@ -88,6 +88,21 @@ function removeSavedContainers() {
   rm -f "$file" && infoln "🧹 Removed file '$file'\n"
 }
 
+function saveNewContainerIds() {
+  local before="$1"
+  local after="$2"
+  local DIR="$3"
+  local output_file="${DIR}/container_ids.txt"
+
+  # Calcula os novos container IDs
+  local new_ids
+  new_ids=$(comm -13 <(echo "$before" | sort) <(echo "$after" | sort))
+
+  # Salva no arquivo, adicionando ao final
+  printf "%s\n" $new_ids >> "$output_file"
+}
+
+
 export -f errorln
 export -f successln
 export -f infoln
