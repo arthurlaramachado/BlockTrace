@@ -30,6 +30,7 @@ trap "popd > /dev/null" EXIT
 CONTAINER_CLI="docker"
 CONTAINER_CLI_COMPOSE="${CONTAINER_CLI} compose"
 COMPOSE_FILE_BASE=compose-net.yaml
+COMPOSE_FILE_COUCH=compose-couch.yaml
 # Get docker sock path from environment variable
 SOCK="${DOCKER_HOST:-/var/run/docker.sock}"
 DOCKER_SOCK="${SOCK##unix://}"
@@ -105,8 +106,10 @@ function networkUp() {
 
   echo ""
   infoln "🐳 Initializing docker containers"
-  #Executes the command to create containers based on compose-net.yaml instructions
-  COMPOSE_FILES="-f ${ROOTDIR}/../compose/${COMPOSE_FILE_BASE} -f ${ROOTDIR}/../compose/${CONTAINER_CLI}/${CONTAINER_CLI}-${COMPOSE_FILE_BASE}"
+  COMPOSE_BASE_FILES="-f ${ROOTDIR}/../compose/${COMPOSE_FILE_BASE} -f ${ROOTDIR}/../compose/${CONTAINER_CLI}/${CONTAINER_CLI}-${COMPOSE_FILE_BASE}"
+  COMPOSE_COUCH_FILES="-f ${ROOTDIR}/../compose/${COMPOSE_FILE_COUCH} -f ${ROOTDIR}/../compose/${CONTAINER_CLI}/${CONTAINER_CLI}-${COMPOSE_FILE_COUCH}"
+  COMPOSE_FILES="${COMPOSE_BASE_FILES} ${COMPOSE_COUCH_FILES}"
+
   DOCKER_SOCK="${DOCKER_SOCK}" ${CONTAINER_CLI_COMPOSE} ${COMPOSE_FILES} up -d 2>&1
   
   if [ $? -ne 0 ]; then
@@ -117,10 +120,6 @@ function networkUp() {
   containers_after=$(docker ps -aq)
 
   saveNewContainerIds "$containers_before" "$containers_after" $ROOTDIR
-
-  #if [ "${DATABASE}" == "couchdb" ]; then
-  #  COMPOSE_FILES="${COMPOSE_FILES} -f compose/${COMPOSE_FILE_COUCH} -f compose/${CONTAINER_CLI}/${CONTAINER_CLI}-${COMPOSE_FILE_COUCH}"
-  #fi
 
   $CONTAINER_CLI ps -a
 

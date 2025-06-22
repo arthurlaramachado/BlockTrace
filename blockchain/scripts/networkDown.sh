@@ -15,6 +15,7 @@ ROOTDIR=$(cd "$(dirname "$0")" && pwd)
 CONTAINER_CLI="docker"
 CONTAINER_CLI_COMPOSE="${CONTAINER_CLI} compose"
 COMPOSE_FILE_BASE=compose-net.yaml
+COMPOSE_FILE_COUCH=compose-couch.yaml
 # Get docker sock path from environment variable
 SOCK="${DOCKER_HOST:-/var/run/docker.sock}"
 DOCKER_SOCK="${SOCK##unix://}"
@@ -45,9 +46,9 @@ function networkDown() {
 
   # CouchDB and CA Files are yet to be implemented
   COMPOSE_BASE_FILES="-f ${ROOTDIR}/../compose/${COMPOSE_FILE_BASE} -f ${ROOTDIR}/../compose/${CONTAINER_CLI}/${CONTAINER_CLI}-${COMPOSE_FILE_BASE}"
-  #COMPOSE_COUCH_FILES="-f ${ROOTDIR}/../compose/${COMPOSE_FILE_COUCH} -f ${ROOTDIR}/../compose/${CONTAINER_CLI}/${CONTAINER_CLI}-${COMPOSE_FILE_COUCH}"
+  COMPOSE_COUCH_FILES="-f ${ROOTDIR}/../compose/${COMPOSE_FILE_COUCH} -f ${ROOTDIR}/../compose/${CONTAINER_CLI}/${CONTAINER_CLI}-${COMPOSE_FILE_COUCH}"
   #COMPOSE_CA_FILES="-f ${ROOTDIR}/../compose/${COMPOSE_FILE_CA} -f ${ROOTDIR}/../compose/${CONTAINER_CLI}/${CONTAINER_CLI}-${COMPOSE_FILE_CA}"
-  COMPOSE_FILES="${COMPOSE_BASE_FILES}" # ${COMPOSE_COUCH_FILES} ${COMPOSE_CA_FILES}"
+  COMPOSE_FILES="${COMPOSE_BASE_FILES} ${COMPOSE_COUCH_FILES}" # ${COMPOSE_COUCH_FILES} ${COMPOSE_CA_FILES}"
 
   DOCKER_SOCK=$DOCKER_SOCK ${CONTAINER_CLI_COMPOSE} ${COMPOSE_FILES} down --volumes --remove-orphans
 
