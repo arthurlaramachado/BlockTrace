@@ -12,8 +12,7 @@
 
 # Todo:
 # Allow for Fabric CAs
-# Implement CouchDB
-# Add function to add container ids of chaincodes to the container_ids.txt file
+# Fix networkUp fail when flag --restart -> possibly not cleaning everything correctly??
 
 # ensures absolute path doesnt matter where script is called from
 ROOTDIR=$(cd "$(dirname "$0")" && pwd)
