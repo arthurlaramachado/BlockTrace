@@ -1,0 +1,50 @@
+[
+    {
+      "dpp_id": "uuid-1234",
+      "serial_number": "SN-456789",
+      "owner_did": "did:example:abcd1234",
+      "status": "in_use",
+      "components": ["dpp_id_sub1", "dpp_id_sub2"],
+      "permissions": {
+        "manufacturer": ["write:manufacturing_data"],
+        "transporter": ["write:logistics_data"],
+        "recycler": ["write:recycling_data"]
+      },
+      "audit_log": [
+        {
+          "timestamp": "2025-06-01T15:22:00Z",
+          "action": "update:logistics_data",
+          "signed_by": "did:example:transporter567"
+        }
+      ]
+    },
+    {
+      "dpp_id": "uuid-5678",
+      "serial_number": "SN-123123",
+      "owner_did": "did:example:efgh5678",
+      "status": "available",
+      "components": [],
+      "permissions": {
+        "manufacturer": ["write:manufacturing_data"]
+      },
+      "audit_log": []
+    },
+    {
+      "dpp_id": "uuid-91011",
+      "serial_number": "SN-999999",
+      "owner_did": "did:example:ijkl91011",
+      "status": "recycled",
+      "components": ["uuid-5678"],
+      "permissions": {
+        "recycler": ["write:recycling_data"]
+      },
+      "audit_log": [
+        {
+          "timestamp": "2025-06-01T09:45:00Z",
+          "action": "update:recycling_data",
+          "signed_by": "did:example:recycler999"
+        }
+      ]
+    }
+  ]
+  
