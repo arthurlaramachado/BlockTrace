@@ -17,7 +17,7 @@ Before getting started, make sure the following dependencies are installed:
 
 ## ⚙️ Installation
 
-To install only the **necessary components** (Docker images and binaries) from Fabric, run the following script located in `/scripts`:
+To install only the **necessary components** (Docker images and binaries) from Fabric, navigate to the blockchain folder and run the following script located in `/scripts`:
 
 ```bash
 ./install-fabric.sh docker binary
