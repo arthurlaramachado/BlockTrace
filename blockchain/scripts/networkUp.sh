@@ -24,12 +24,14 @@ pushd ${ROOTDIR} > /dev/null
 trap "popd > /dev/null" EXIT
 
 . ./utils.sh
+. ./registerEnroll.sh
 
 ## VARIABLES
 CONTAINER_CLI="docker"
 CONTAINER_CLI_COMPOSE="${CONTAINER_CLI} compose"
 COMPOSE_FILE_BASE=compose-net.yaml
 COMPOSE_FILE_COUCH=compose-couch.yaml
+COMPOSE_FILE_CA=compose-ca.yaml
 # Get docker sock path from environment variable
 SOCK="${DOCKER_HOST:-/var/run/docker.sock}"
 DOCKER_SOCK="${SOCK##unix://}"
@@ -37,53 +39,49 @@ DOCKER_SOCK="${SOCK##unix://}"
 function createOrgs() {
     if test -d "${ROOTDIR}/../organizations/peerOrganizations"; then
         infoln "🗑️  Removing older peers and orgs..."
-        rm -Rf "${ROOTDIR}/../organizations/peerOrganizations" && rm -Rf "${ROOTDIR}/../organizations/ordererOrganizations"
+        rm -Rf "${ROOTDIR}/../organizations/peerOrganizations" && rm -Rf "${ROOTDIR}/../organizations/ordererOrganizations" && rm -Rf "${ROOTDIR}/../organizations/fabric-ca"
     fi
 
-    # Create crypto material using cryptogen
-    which cryptogen # checks $PATH for cryptogen bin
-    if [ "$?" -ne 0 ]; then # "$?" is a variable containing the return of the last command, if not equal 0 (-ne 0) triggers error
-      fatalln "cryptogen tool not found. exiting"
-    fi
-    infoln "🔐 Generating certificates using cryptogen tool"
+    infoln "🔐 Generating certificates using Fabric CA"
+    ${CONTAINER_CLI_COMPOSE} -f ${ROOTDIR}/../compose/$COMPOSE_FILE_CA -f ${ROOTDIR}/../compose/$CONTAINER_CLI/${CONTAINER_CLI}-$COMPOSE_FILE_CA up -d 2>&1
+
+    # Make sure CA files have been created
+    while :
+    do
+      if [ ! -f "${ROOTDIR}/../organizations/fabric-ca/org1/tls-cert.pem" ]; then
+        sleep 1
+      else
+        break
+      fi
+    done
+
+    # Make sure CA service is initialized and can accept requests before making register and enroll calls
+    export FABRIC_CA_CLIENT_HOME=${ROOTDIR}/../organizations/peerOrganizations/org1.example.com/
+    COUNTER=0
+    rc=1
+    while [[ $rc -ne 0 && $COUNTER -lt $MAX_RETRY ]]; do
+      sleep 1
+      set -x
+      fabric-ca-client getcainfo -u https://admin:adminpw@localhost:7054 --caname ca-org1 --tls.certfiles "${ROOTDIR}/../organizations/fabric-ca/org1/ca-cert.pem"
+      res=$?
+    { set +x; } 2>/dev/null
+    rc=$res  # Update rc
+    COUNTER=$((COUNTER + 1))
+    done
 
     echo ""
     infoln "🏗️  Creating Org1 Identities"
-
-    set -x
-    cryptogen generate --config="${ROOTDIR}/../organizations/cryptogen/crypto-config-org1.yaml" --output="${ROOTDIR}/../organizations"
-    res=$?
-    { set +x; } 2>/dev/null
-    if [ $res -ne 0 ]; then
-      fatalln "Failed to generate certificates..."
-    fi
-
+    createOrg1
     successln "Org1 successfully created!"
 
     echo ""
     infoln "🏗️  Creating Org2 Identities"
-
-    set -x
-    cryptogen generate --config="${ROOTDIR}/../organizations/cryptogen/crypto-config-org2.yaml" --output="${ROOTDIR}/../organizations"
-    res=$?
-    { set +x; } 2>/dev/null
-    if [ $res -ne 0 ]; then
-      fatalln "Failed to generate certificates..."
-    fi
-
+    createOrg2
     successln "Org1 successfully created!"
 
     echo ""
     infoln "🏗️  Creating Orderer Org Identities"
-
-    set -x
-    cryptogen generate --config="${ROOTDIR}/../organizations/cryptogen/crypto-config-orderer.yaml" --output="${ROOTDIR}/../organizations"
-    res=$?
-    { set +x; } 2>/dev/null
-    if [ $res -ne 0 ]; then
-      fatalln "Failed to generate certificates..."
-    fi
-
+    createOrderer
     successln "Orderer successfully created!"
 
     echo ""
@@ -92,13 +90,36 @@ function createOrgs() {
     successln "CPP successfully created"
 }
 
+## Check for fabric-ca
+function checkCA() {
+  infoln "Looking for Fabric CA Client..."
+
+  fabric-ca-client version > /dev/null 2>&1
+  if [[ $? -ne 0 ]]; then
+    fatalln "fabric-ca-client binary not found..\n\n
+      Follow the instructions in the Fabric docs to install the Fabric Binaries:\n
+      https://hyperledger-fabric.readthedocs.io/en/latest/install.html
+    "
+  fi
+  # Download image of fabric-ca-client
+  CA_LOCAL_VERSION=$(fabric-ca-client version | sed -ne 's/ Version: //p')
+  CA_DOCKER_IMAGE_VERSION=$(${CONTAINER_CLI} run --rm hyperledger/fabric-ca:latest fabric-ca-client version | sed -ne 's/ Version: //p' | head -1)
+  infoln "CA_LOCAL_VERSION=$CA_LOCAL_VERSION"
+  infoln "CA_DOCKER_IMAGE_VERSION=$CA_DOCKER_IMAGE_VERSION"
+
+  if [ "$CA_LOCAL_VERSION" != "$CA_DOCKER_IMAGE_VERSION" ]; then
+    warnln "Local fabric-ca binaries and docker images are out of sync. This may cause problems."
+  fi
+}
+
 function networkUp() {
   checkDockerAndCompose
+  checkCA
 
+  createOrgs
   # generate artifacts if they don't exist
-  if [ ! -d "${ROOTDIR}/../organizations/peerOrganizations" ]; then
-    createOrgs
-  fi
+  #if [ ! -d "${ROOTDIR}/../organizations/peerOrganizations" ]; then
+  #fi
 
   # Get list of container IDs BEFORE
   containers_before=$(docker ps -aq)
@@ -178,6 +199,9 @@ function createChannel {
   else
     successln "Network running and certs synced!\n" 
   fi
+
+  infoln "⏳ Waiting for 10 seconds for containers to fully initialize..."
+  sleep 5
 
   #Runs the script that creates a Channel
   ./createChannel.sh

@@ -47,29 +47,33 @@ function networkDown() {
   # CouchDB and CA Files are yet to be implemented
   COMPOSE_BASE_FILES="-f ${ROOTDIR}/../compose/${COMPOSE_FILE_BASE} -f ${ROOTDIR}/../compose/${CONTAINER_CLI}/${CONTAINER_CLI}-${COMPOSE_FILE_BASE}"
   COMPOSE_COUCH_FILES="-f ${ROOTDIR}/../compose/${COMPOSE_FILE_COUCH} -f ${ROOTDIR}/../compose/${CONTAINER_CLI}/${CONTAINER_CLI}-${COMPOSE_FILE_COUCH}"
-  #COMPOSE_CA_FILES="-f ${ROOTDIR}/../compose/${COMPOSE_FILE_CA} -f ${ROOTDIR}/../compose/${CONTAINER_CLI}/${CONTAINER_CLI}-${COMPOSE_FILE_CA}"
-  COMPOSE_FILES="${COMPOSE_BASE_FILES} ${COMPOSE_COUCH_FILES}" # ${COMPOSE_COUCH_FILES} ${COMPOSE_CA_FILES}"
+  COMPOSE_CA_FILES="-f ${ROOTDIR}/../compose/${COMPOSE_FILE_CA} -f ${ROOTDIR}/../compose/${CONTAINER_CLI}/${CONTAINER_CLI}-${COMPOSE_FILE_CA}"
+  COMPOSE_FILES="${COMPOSE_BASE_FILES} ${COMPOSE_COUCH_FILES} ${COMPOSE_CA_FILES}"
 
   DOCKER_SOCK=$DOCKER_SOCK ${CONTAINER_CLI_COMPOSE} ${COMPOSE_FILES} down --volumes --remove-orphans
 
   COMPOSE_FILE_BASE=$temp_compose
 
-  # Don't remove the generated artifacts -- note, the ledgers are always removed
-  # Bring down the network, deleting the volumes
-  ${CONTAINER_CLI} volume rm docker_orderer.example.com docker_peer0.org1.example.com docker_peer0.org2.example.com
   #Cleanup the chaincode containers
   clearContainers
   #Cleanup images
   removeUnwantedImages
+
+  # Don't remove the generated artifacts -- note, the ledgers are always removed
+  # Bring down the network, deleting the volumes
+  ${CONTAINER_CLI} volume rm compose_orderer.example.com
+  ${CONTAINER_CLI} volume rm compose_peer0.org1.example.com
+  ${CONTAINER_CLI} volume rm compose_peer0.org2.example.com
+
   # remove orderer block and other channel configuration transactions and certs
-  ${CONTAINER_CLI} run --rm -v "$(pwd):/data" busybox sh -c 'cd /data && rm -rf system-genesis-block/*.block organizations/peerOrganizations organizations/ordererOrganizations'
+  ${CONTAINER_CLI} run --rm -v "$(pwd):/data" busybox sh -c 'cd /data && rm -rf '"${ROOTDIR}"'/../artifacts/*.block '"${ROOTDIR}"'/../organizations/peerOrganizations '"${ROOTDIR}"'/../organizations/ordererOrganizations'
   ## remove fabric ca artifacts
-  ${CONTAINER_CLI} run --rm -v "$(pwd):/data" busybox sh -c 'cd /data && rm -rf organizations/fabric-ca/org1/msp organizations/fabric-ca/org1/tls-cert.pem organizations/fabric-ca/org1/ca-cert.pem organizations/fabric-ca/org1/IssuerPublicKey organizations/fabric-ca/org1/IssuerRevocationPublicKey organizations/fabric-ca/org1/fabric-ca-server.db'
-  ${CONTAINER_CLI} run --rm -v "$(pwd):/data" busybox sh -c 'cd /data && rm -rf organizations/fabric-ca/org2/msp organizations/fabric-ca/org2/tls-cert.pem organizations/fabric-ca/org2/ca-cert.pem organizations/fabric-ca/org2/IssuerPublicKey organizations/fabric-ca/org2/IssuerRevocationPublicKey organizations/fabric-ca/org2/fabric-ca-server.db'
-  ${CONTAINER_CLI} run --rm -v "$(pwd):/data" busybox sh -c 'cd /data && rm -rf organizations/fabric-ca/ordererOrg/msp organizations/fabric-ca/ordererOrg/tls-cert.pem organizations/fabric-ca/ordererOrg/ca-cert.pem organizations/fabric-ca/ordererOrg/IssuerPublicKey organizations/fabric-ca/ordererOrg/IssuerRevocationPublicKey organizations/fabric-ca/ordererOrg/fabric-ca-server.db'
-  ${CONTAINER_CLI} run --rm -v "$(pwd):/data" busybox sh -c 'cd /data && rm -rf addOrg3/fabric-ca/org3/msp addOrg3/fabric-ca/org3/tls-cert.pem addOrg3/fabric-ca/org3/ca-cert.pem addOrg3/fabric-ca/org3/IssuerPublicKey addOrg3/fabric-ca/org3/IssuerRevocationPublicKey addOrg3/fabric-ca/org3/fabric-ca-server.db'
+  ${CONTAINER_CLI} run --rm -v "$(pwd):/data" busybox sh -c 'cd /data && rm -rf '"${ROOTDIR}"'/../organizations/fabric-ca/org1/msp '"${ROOTDIR}"'/../organizations/fabric-ca/org1/tls-cert.pem '"${ROOTDIR}"'/../organizations/fabric-ca/org1/ca-cert.pem organizations/fabric-ca/org1/IssuerPublicKey '"${ROOTDIR}"'/../organizations/fabric-ca/org1/IssuerRevocationPublicKey '"${ROOTDIR}"'/../organizations/fabric-ca/org1/fabric-ca-server.db'
+  ${CONTAINER_CLI} run --rm -v "$(pwd):/data" busybox sh -c 'cd /data && rm -rf '"${ROOTDIR}"'/../organizations/fabric-ca/org2/msp '"${ROOTDIR}"'/../organizations/fabric-ca/org2/tls-cert.pem '"${ROOTDIR}"'/../organizations/fabric-ca/org2/ca-cert.pem organizations/fabric-ca/org2/IssuerPublicKey '"${ROOTDIR}"'/../organizations/fabric-ca/org2/IssuerRevocationPublicKey '"${ROOTDIR}"'/../organizations/fabric-ca/org2/fabric-ca-server.db'
+  ${CONTAINER_CLI} run --rm -v "$(pwd):/data" busybox sh -c 'cd /data && rm -rf '"${ROOTDIR}"'/../organizations/fabric-ca/ordererOrg/msp '"${ROOTDIR}"'/../organizations/fabric-ca/ordererOrg/tls-cert.pem '"${ROOTDIR}"'/../organizations/fabric-ca/ordererOrg/ca-cert.pem '"${ROOTDIR}"'/../organizations/fabric-ca/ordererOrg/IssuerPublicKey '"${ROOTDIR}"'/../organizations/fabric-ca/ordererOrg/IssuerRevocationPublicKey '"${ROOTDIR}"'/../organizations/fabric-ca/ordererOrg/fabric-ca-server.db'
   # remove channel and script artifacts
-  ${CONTAINER_CLI} run --rm -v "$(pwd):/data" busybox sh -c 'cd /data && rm -rf channel-artifacts log.txt *.tar.gz'
+  ${CONTAINER_CLI} run --rm -v "$(pwd):/data" busybox sh -c 'cd /data && rm -rf '"${ROOTDIR}"'/../artifacts log.txt *.tar.gz'
+  ${CONTAINER_CLI} run --rm -v "$(pwd):/data" busybox sh -c 'cd /data && rm -rf '"${ROOTDIR}"' log.txt *.tar.gz'
   
   successln "Network is now down!"
 }
