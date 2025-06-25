@@ -1,3 +1,4 @@
+## Blockchain
 # Files created after runing install-fabric.sh
 config/
 bin/
@@ -13,11 +14,11 @@ blockchain/organizations/ordererOrganizations
 
 #fabric ca dependencies
 blockchain/organizations/fabric-ca/ordererOrg/*
-!blockchain/organizations/fabric-ca/ordererOrg/fabric-ca-server-config.yaml
+#!blockchain/organizations/fabric-ca/ordererOrg/fabric-ca-server-config.yaml
 blockchain/organizations/fabric-ca/org1/*
-!blockchain/organizations/fabric-ca/org1/fabric-ca-server-config.yaml
+#!blockchain/organizations/fabric-ca/org1/fabric-ca-server-config.yaml
 blockchain/organizations/fabric-ca/org2/*
-!blockchain/organizations/fabric-ca/org2/fabric-ca-server-config.yaml
+#!blockchain/organizations/fabric-ca/org2/fabric-ca-server-config.yaml
 
 # container ids for control of your ouw network
 blockchain/scripts/container_ids.txt
@@ -25,3 +26,7 @@ blockchain/scripts/container_ids.txt
 # Used to store log errors or informations in scripts
 blockchain/scripts/log.txt
 blockchain/scripts/*.tar.gz
+
+## API
+node_modules
+.env
