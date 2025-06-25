@@ -11,29 +11,33 @@ COMMAND=$1
 
 setGlobals 1
 
-CA_FILE="--cafile ${ROOTDIR}/../organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem" 
+# To do - Create a test to all functions
 
-if [ "$1" = "InitLedger" ]; then
-    peer chaincode invoke \
-    -o localhost:7050 \
+CA_FILE="--cafile ${ROOTDIR}/../organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem" 
+INVOKE_CFG="-o localhost:7050 \
     --ordererTLSHostnameOverride orderer.example.com \
     --tls \
-    --cafile "${ROOTDIR}/../organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem" \
+    --cafile ${ROOTDIR}/../organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem \
     -C main \
     -n dpps-management-chaincode \
     --peerAddresses localhost:7051 \
     --peerAddresses localhost:9051 \
-    --tlsRootCertFiles "${ROOTDIR}/../organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt" \
-    --tlsRootCertFiles "${ROOTDIR}/../organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt" \
-    -c '{"function":"InitLedger", "Args":[]}'
-elif [ "$1" = "QueryAll" ]; then
-    peer chaincode query \
-        -o localhost:7050 \
+    --tlsRootCertFiles ${ROOTDIR}/../organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt \
+    --tlsRootCertFiles ${ROOTDIR}/../organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt \
+"
+QUERY_CFG="-o localhost:7050 \
         -C main \
         -n dpps-management-chaincode \
         --peerAddresses localhost:7051 \
-        --tlsRootCertFiles "${ROOTDIR}/../organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt" \
-        -c '{"function":"GetAllDPPs", "Args":[]}' | jq
+        --tlsRootCertFiles ${ROOTDIR}/../organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt \
+"
+
+if [ "$1" = "InitLedger" ]; then
+    peer chaincode invoke $INVOKE_CFG -c '{"function":"InitLedger", "Args":[]}'
+elif [ "$1" = "GetAllDPPs" ]; then
+    peer chaincode query $QUERY_CFG -c '{"function":"GetAllDPPs", "Args":[]}' | jq
+elif [ "$1" = "DPPExists" ]; then
+    peer chaincode query $QUERY_CFG -c '{"function":"DPPExists", "Args":["uuid-91011"]}'
 else
     warnln "$1 is not a valid command to chaincode"
 fi

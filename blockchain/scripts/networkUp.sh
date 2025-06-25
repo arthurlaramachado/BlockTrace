@@ -200,7 +200,7 @@ function createChannel {
     successln "Network running and certs synced!\n" 
   fi
 
-  infoln "⏳ Waiting for 10 seconds for containers to fully initialize..."
+  infoln "⏳ Waiting for 5 seconds for containers to fully initialize..."
   sleep 5
 
   #Runs the script that creates a Channel
