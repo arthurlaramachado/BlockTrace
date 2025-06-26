@@ -79,11 +79,13 @@ curl http://localhost:3000/dpp/getAllDPPs
       "dpp_id": "uuid-1234",
       "serial_number": "SN-456789",
       "owner_did": "did:example:abcd1234",
-      "status": "in_use",
-      "components": ["dpp_id_sub1", "dpp_id_sub2"],
-      "permissions": {
-        "manufacturer": ["write:manufacturing_data"]
-      }
+      ...
+    },
+    {
+      "dpp_id": "uuid-2345",
+      "serial_number": "SN-123897",
+      "owner_did": "did:example:abcd1234",
+      ...
     }
   ]
 }
@@ -109,7 +111,9 @@ curl "http://localhost:3000/dpp/getAllDPPsByOwnerDID?owner_did=did:example:abcd1
   "data": [
     {
       "dpp_id": "uuid-1234",
-      "owner_did": "did:example:abcd1234"
+      "serial_number": "SN-456789",
+      "owner_did": "did:example:abcd1234",
+      ...
     }
   ]
 }
@@ -135,7 +139,8 @@ curl "http://localhost:3000/dpp/readDPP?dpp_id=uuid-1234"
   "data": {
     "dpp_id": "uuid-1234",
     "serial_number": "SN-456789",
-    "owner_did": "did:example:abcd1234"
+    "owner_did": "did:example:abcd1234",
+    ...
   }
 }
 ```
