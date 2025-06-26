@@ -4,6 +4,7 @@ import (
 	"encoding/json" // encode/decode JSON (marshall / unmarshall)
 	"fmt"           // formatting text, logs, prints and debugs
 	"os"
+	"time"
 
 	"github.com/hyperledger/fabric-contract-api-go/contractapi" // Hyperledger Fabric Contract API donwloaded through Go Modules
 )
@@ -22,8 +23,10 @@ type DPP struct {
 	//Lifecycle    LifecycleData       `json:"lifecycle"`
 	OwnerDID     string              `json:"owner_did"`
 	Permissions  map[string][]string `json:"permissions"`
+	ProductName  string              `json:"product_name"`
 	SerialNumber string              `json:"serial_number"`
 	Status       string              `json:"status"`
+	UpdatedAt    time.Time           `json:"updated_at"`
 }
 
 type LifecycleData struct {
@@ -120,8 +123,10 @@ func (s *SmartContract) CreateDPP(
 	status string,
 	//lifecycle LifecycleData,
 	permissions map[string][]string,
+	product_name string,
 	components []string,
 	audit_log AuditLogEntry,
+	updated_at time.Time,
 ) error {
 	exists, err := s.DPPExists(ctx, dpp_id)
 	if err != nil {
@@ -138,8 +143,10 @@ func (s *SmartContract) CreateDPP(
 		Status:       status,
 		//Lifecycle:    lifecycle,
 		Permissions: permissions,
+		ProductName: product_name,
 		Components:  components,
 		AuditLog:    []AuditLogEntry{audit_log},
+		UpdatedAt:   updated_at,
 	}
 
 	dppJSON, err := json.Marshal(dpp)
@@ -178,8 +185,10 @@ func (s *SmartContract) UpdateDPP(
 	status string,
 	//lifecycle LifecycleData,
 	permissions map[string][]string,
+	product_name string,
 	components []string,
 	audit_log AuditLogEntry,
+	updated_at time.Time,
 ) error {
 	exists, err := s.DPPExists(ctx, dpp_id)
 	if err != nil {
@@ -197,8 +206,10 @@ func (s *SmartContract) UpdateDPP(
 		Status:       status,
 		//Lifecycle:    lifecycle,
 		Permissions: permissions,
+		ProductName: product_name,
 		Components:  components,
 		AuditLog:    []AuditLogEntry{audit_log},
+		UpdatedAt:   updated_at,
 	}
 
 	dppJSON, err := json.Marshal(dpp)

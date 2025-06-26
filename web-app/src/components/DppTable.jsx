@@ -16,51 +16,31 @@ const DppTable = () => {
   const { showSnackbar } = useSnackbar()
 
   useEffect(() => {
+    setLoading(true)
     fetchDpps()
   }, [])
 
+  useEffect(() => {
+    setLoading(false)
+  }, [dpps])
+
   const fetchDpps = async () => {
     try {
-      setLoading(true)
-      // Simulate API call - replace with actual API
-      const response = await fetch(`/api/dpp?ownerKey=${ownerKey}`)
+      await fetch('http://localhost:3000/dpp/getAllDPPsByOwnerDID?owner_did=did:example:abcd1234')
+        .then(async response => {
+          if (!response.statusText == "OK") {
+            throw new Error('Request failed');
+          }
 
-      // Mock data for demonstration
-      const mockData = [
-        {
-          id: 1,
-          dpp_id: "dpp-001-smartphone",
-          product_name: "Smartphone EcoTech Pro",
-          manufacturer: "EcoTech Industries",
-          status: "active",
-          created_at: "2024-01-15T10:30:00Z",
-          updated_at: "2024-01-20T14:45:00Z",
-        },
-        {
-          id: 2,
-          dpp_id: "dpp-002-laptop",
-          product_name: "Laptop GreenCompute X1",
-          manufacturer: "GreenCompute Corp",
-          status: "active",
-          created_at: "2024-01-10T09:15:00Z",
-          updated_at: "2024-01-18T16:20:00Z",
-        },
-        {
-          id: 3,
-          dpp_id: "dpp-003-tablet",
-          product_name: "Tablet EcoTab Mini",
-          manufacturer: "EcoTech Industries",
-          status: "inactive",
-          created_at: "2024-01-05T14:22:00Z",
-          updated_at: "2024-01-12T11:30:00Z",
-        },
-      ]
+          const result = await response.json()
 
-      setDpps(mockData)
+          setDpps(result.data)
+        }).catch(error => {
+          console.error('Error:', error);
+        });
+
     } catch (error) {
       showSnackbar("Erro ao carregar DPPs", "error")
-    } finally {
-      setLoading(false)
     }
   }
 

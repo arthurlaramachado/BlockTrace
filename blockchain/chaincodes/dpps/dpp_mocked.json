@@ -5,6 +5,7 @@
       "owner_did": "did:example:abcd1234",
       "status": "in_use",
       "components": ["dpp_id_sub1", "dpp_id_sub2"],
+      "product_name": "tablet",
       "permissions": {
         "manufacturer": ["write:manufacturing_data"],
         "transporter": ["write:logistics_data"],
@@ -16,7 +17,8 @@
           "action": "update:logistics_data",
           "signed_by": "did:example:transporter567"
         }
-      ]
+      ],
+      "updated_at": "2025-06-26T14:33:00Z"
     },
     {
       "dpp_id": "uuid-5678",
@@ -24,10 +26,12 @@
       "owner_did": "did:example:efgh5678",
       "status": "available",
       "components": [],
+      "product_name": "electric engine",
       "permissions": {
         "manufacturer": ["write:manufacturing_data"]
       },
-      "audit_log": []
+      "audit_log": [],
+      "updated_at": "2025-06-26T14:33:00Z"
     },
     {
       "dpp_id": "uuid-91011",
@@ -35,6 +39,7 @@
       "owner_did": "did:example:abcd1234",
       "status": "recycled",
       "components": ["uuid-5678"],
+      "product_name": "electric engine",
       "permissions": {
         "recycler": ["write:recycling_data"]
       },
@@ -44,7 +49,8 @@
           "action": "update:recycling_data",
           "signed_by": "did:example:recycler999"
         }
-      ]
+      ],
+      "updated_at": "2025-06-26T14:33:00Z"
     }
   ]
   
