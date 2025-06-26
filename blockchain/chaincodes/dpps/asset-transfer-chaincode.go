@@ -265,3 +265,37 @@ func (s *SmartContract) GetAllDPPs(ctx contractapi.TransactionContextInterface) 
 
 	return dpps, nil
 }
+
+// Get all DPPs from owner_id
+func (s *SmartContract) GetAllDPPsByOwnerDID(ctx contractapi.TransactionContextInterface, owner_did string) ([]*DPP, error) {
+	query := fmt.Sprintf(`{
+		"selector": {
+			"owner_did": "%s"
+		}
+	}`, owner_did)
+
+	resultsIterator, err := ctx.GetStub().GetQueryResult(query)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to query DPPs by owner_did: %v", err)
+	}
+
+	defer resultsIterator.Close()
+
+	var dpps []*DPP
+
+	for resultsIterator.HasNext() {
+		queryResponse, err := resultsIterator.Next()
+		if err != nil {
+			return nil, err
+		}
+
+		var dpp DPP
+		if err := json.Unmarshal(queryResponse.Value, &dpp); err != nil {
+			return nil, err
+		}
+		dpps = append(dpps, &dpp)
+	}
+
+	return dpps, nil
+}

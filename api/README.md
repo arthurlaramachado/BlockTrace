@@ -43,19 +43,33 @@ npm start
 
 API will be available at: [http://localhost:3000](http://localhost:3000)
 
-## 📡 Available Routes
 
-### `GET /api/dpps`
+## ⚙️ Endpoints
 
-Returns all DPPs registered on the blockchain.
+All responses follow the format:
 
-**Example:**
-
-```bash
-curl http://localhost:3000/api/dpps
+```json
+{
+  "success": true | false,
+  "data": ... | null,
+  "message": "...", // optional
+  "error": "...",   // optional
+}
 ```
 
-**Response:**
+---
+
+### 📡 `GET /dpp/getAllDPPs`
+
+Returns **all DPPs** registered on the blockchain.
+
+#### ✅ Example:
+
+```bash
+curl http://localhost:3000/dpp/getAllDPPs
+```
+
+#### 🔁 Response:
 
 ```json
 {
@@ -74,6 +88,59 @@ curl http://localhost:3000/api/dpps
   ]
 }
 ```
+
+---
+
+### 📡 `GET /dpp/getAllDPPsByOwnerDID?owner_did=<owner_did>`
+
+Returns all DPPs that belong to a specific owner identified by their `owner_did`.
+
+#### ✅ Example:
+
+```bash
+curl "http://localhost:3000/dpp/getAllDPPsByOwnerDID?owner_did=did:example:abcd1234"
+```
+
+#### 🔁 Response:
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "dpp_id": "uuid-1234",
+      "owner_did": "did:example:abcd1234"
+    }
+  ]
+}
+```
+
+---
+
+### 📡 `GET /dpp/readDPP?dpp_id=<dpp_id>`
+
+Returns the **full data for a specific DPP** given its `dpp_id`.
+
+#### ✅ Example:
+
+```bash
+curl "http://localhost:3000/dpp/readDPP?dpp_id=uuid-1234"
+```
+
+#### 🔁 Response:
+
+```json
+{
+  "success": true,
+  "data": {
+    "dpp_id": "uuid-1234",
+    "serial_number": "SN-456789",
+    "owner_did": "did:example:abcd1234"
+  }
+}
+```
+
+---
 
 ## 🧾 License
 

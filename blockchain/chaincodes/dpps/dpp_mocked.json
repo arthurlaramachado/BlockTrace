@@ -32,7 +32,7 @@
     {
       "dpp_id": "uuid-91011",
       "serial_number": "SN-999999",
-      "owner_did": "did:example:ijkl91011",
+      "owner_did": "did:example:abcd1234",
       "status": "recycled",
       "components": ["uuid-5678"],
       "permissions": {
