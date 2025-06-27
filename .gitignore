@@ -13,12 +13,7 @@ blockchain/organizations/peerOrganizations
 blockchain/organizations/ordererOrganizations
 
 #fabric ca dependencies
-blockchain/organizations/fabric-ca/ordererOrg/*
-#!blockchain/organizations/fabric-ca/ordererOrg/fabric-ca-server-config.yaml
-blockchain/organizations/fabric-ca/org1/*
-#!blockchain/organizations/fabric-ca/org1/fabric-ca-server-config.yaml
-blockchain/organizations/fabric-ca/org2/*
-#!blockchain/organizations/fabric-ca/org2/fabric-ca-server-config.yaml
+blockchain/organizations
 
 # container ids for control of your ouw network
 blockchain/scripts/container_ids.txt
