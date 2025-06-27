@@ -39,7 +39,7 @@ elif [ "$1" = "GetAllDPPs" ]; then
 elif [ "$1" = "DPPExists" ]; then
     peer chaincode query $QUERY_CFG -c '{"function":"DPPExists", "Args":["uuid-91011"]}'
 elif [ "$1" = "GetAllDPPsByOwnerDID" ]; then
-    peer chaincode query $QUERY_CFG -c '{"function":"GetAllDPPsByOwnerDID", "Args":["did:example:abcd1234"]}' | jq
+    peer chaincode query $QUERY_CFG -c '{"function":"GetAllDPPsByOwnerDID", "Args":["03FASQc8mCIM0LP6FO80LEIiUS9AFE/XZ7PoUzk7AVo="]}' | jq
 else
     warnln "$1 is not a valid command to chaincode"
 fi
