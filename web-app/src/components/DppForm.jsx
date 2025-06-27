@@ -26,27 +26,80 @@ import { Add, Delete, Save, Cancel } from "@mui/icons-material"
 import { useNavigate, useParams } from "react-router-dom"
 import { useAuth } from "../contexts/AuthContext"
 import { useSnackbar } from "../contexts/SnackbarContext"
+import { getPublicKeyFromPrivateKey, signedFetch } from "../scripts/signTransaction"
+
+export function getDPPStatusMenuItems() {
+  return [
+    { value: "created", label: "Created" },
+    { value: "in_production", label: "In Production" },
+    { value: "manufactured", label: "Manufactured" },
+    { value: "in_transit", label: "In Transit" },
+    { value: "delivered", label: "Delivered" },
+    { value: "in_use", label: "In Use" },
+    { value: "under_maintenance", label: "Under Maintenance" },
+    { value: "repaired", label: "Repaired" },
+    { value: "returned", label: "Returned" },
+    { value: "recalled", label: "Recalled" },
+    { value: "end_of_life", label: "End of Life" },
+    { value: "in_recycling", label: "In Recycling" },
+    { value: "recycled", label: "Recycled" },
+    { value: "disposed", label: "Disposed" },
+    { value: "archived", label: "Archived" }
+  ].map((status) => (
+    <MenuItem key={status.value} value={status.value}>
+      {status.label}
+    </MenuItem>
+  ));
+}
+
+export function getScopeMenuItems() {
+  return [
+    { value: "material_data", label: "Material Data" },
+    { value: "manufacturing_data", label: "Manufacturing Data" },
+    { value: "environmental_data", label: "Environmental Data" },
+    { value: "logistics_data", label: "Logistics Data" },
+    { value: "circularity_data", label: "Circularity Data" },
+    { value: "maintenance_data", label: "Maintenance Data" },
+    { value: "user_manual", label: "User Manual" },
+    { value: "status", label: "Status" },
+    { value: "audit_log", label: "Audit Log" },
+    { value: "all", label: "All" },
+  ].map((scope) => (
+    <MenuItem key={scope.value} value={scope.value}>
+      {scope.label}
+    </MenuItem>
+  ));
+}
+
+export function getRoleMenuItems() {
+  return [
+    { value: "read", label: "Read" },
+    { value: "write", label: "Write" },
+    { value: "view", label: "View" },
+    { value: "all", label: "All" },
+  ].map((role) => (
+    <MenuItem key={role.value} value={role.value}>
+      {role.label}
+    </MenuItem>
+  ));
+}
 
 const DppForm = ({ mode = "create" }) => {
   const [formData, setFormData] = useState({
     product_name: "",
-    manufacturer: "",
     serial_number: "",
-    status: "active",
+    status: "created",
     components: [],
     permissions: [],
   })
   const [loading, setLoading] = useState(false)
-  const [newComponent, setNewComponent] = useState({
-    name: "",
-    type: "",
-    supplier: "",
-    sustainability_score: 0,
-  })
+  const [newComponent, setNewComponent] = useState("")
   const [newPermission, setNewPermission] = useState({
     role: "",
-    scope: "read_only",
+    scope: "",
+    user_did: ""
   })
+  const [oldDPP, setOldDPP] = useState()
 
   const navigate = useNavigate()
   const { dpp_id } = useParams()
@@ -54,38 +107,51 @@ const DppForm = ({ mode = "create" }) => {
   const { showSnackbar } = useSnackbar()
 
   const isEditMode = mode === "edit"
+  const api_address = import.meta.env.VITE_API_ADDRESS
 
   useEffect(() => {
     if (isEditMode && dpp_id) {
+      const fetchDppData = async () => {
+        try {
+          const url = `${api_address}/dpp/readDPP?dpp_id=${dpp_id}`
+          const response = await fetch(url, { method: "GET" })
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch DPP data")
+          }
+
+          const res = await response.json()
+          const data = res.data
+
+          setFormData({
+            product_name: data.product_name,
+            serial_number: data.serial_number,
+            status: data.status,
+            components: data.components,
+            permissions: data.permissions
+          })
+
+          setOldDPP(data)
+
+        } catch (error) {
+          showSnackbar("Error in loading DPP", "error")
+        }
+      }
+
       fetchDppData()
     }
   }, [isEditMode, dpp_id])
 
-  const fetchDppData = async () => {
-    try {
-      // Mock data for edit mode
-      const mockData = {
-        product_name: "Smartphone EcoTech Pro",
-        manufacturer: "EcoTech Industries",
-        serial_number: "SN-2024-001",
-        status: "active",
-        components: [
-          {
-            name: "Battery",
-            type: "Li-ion",
-            supplier: "GreenBattery Corp",
-            sustainability_score: 85,
-          },
-        ],
-        permissions: [
-          { role: "manufacturer", scope: "full_access" },
-          { role: "retailer", scope: "read_only" },
-        ],
-      }
-      setFormData(mockData)
-    } catch (error) {
-      showSnackbar("Erro ao carregar dados do DPP", "error")
-    }
+  const getPermissionLine = (permission) => {
+    const splitted = permission.split(":")
+
+    return (
+      <>
+        <TableCell>{splitted[0]}</TableCell>
+        <TableCell>{splitted[1]}</TableCell>
+        <TableCell>{splitted[2]}</TableCell>
+      </>
+    )
   }
 
   const handleInputChange = (field, value) => {
@@ -96,36 +162,38 @@ const DppForm = ({ mode = "create" }) => {
   }
 
   const addComponent = () => {
-    if (newComponent.name && newComponent.type) {
-      setFormData((prev) => ({
-        ...prev,
-        components: [...prev.components, { ...newComponent }],
-      }))
-      setNewComponent({
-        name: "",
-        type: "",
-        supplier: "",
-        sustainability_score: 0,
-      })
+    if (newComponent.length > 0) {
+      setFormData(
+        {
+          ...formData,
+          components: [...formData.components, newComponent],
+        }
+      )
     }
+
+    setNewComponent("")
   }
 
-  const removeComponent = (index) => {
-    setFormData((prev) => ({
-      ...prev,
-      components: prev.components.filter((_, i) => i !== index),
-    }))
+  const removeComponent = (component) => {
+    const newComponents = formData.components.filter(value => value != component)
+    setFormData({ ...formData, components: newComponents })
   }
 
   const addPermission = () => {
-    if (newPermission.role) {
+    const { role, scope, user_did } = newPermission
+
+    if (role.length > 0 && scope.length > 0 && user_did.length > 0) {
+      const newPermissionJoined = `${role}:${scope}:${user_did}`
+
       setFormData((prev) => ({
         ...prev,
-        permissions: [...prev.permissions, { ...newPermission }],
+        permissions: [...prev.permissions, newPermissionJoined],
       }))
+
       setNewPermission({
         role: "",
-        scope: "read_only",
+        scope: "",
+        user_did: ""
       })
     }
   }
@@ -142,23 +210,34 @@ const DppForm = ({ mode = "create" }) => {
     setLoading(true)
 
     try {
-      const url = isEditMode ? `/api/dpp/${dpp_id}` : "/api/dpp"
-      const method = isEditMode ? "PUT" : "POST"
+      const publicKey = getPublicKeyFromPrivateKey(ownerKey)
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${ownerKey}`,
-        },
-        body: JSON.stringify(formData),
+      const dpp = {
+        ...formData,
+        owner_did: publicKey,
+      }
+
+      const editBody = {
+        ...formData,
+        owner_did: isEditMode ? oldDPP.owner_did : "",
+        dpp_id: isEditMode ? oldDPP.dpp_id : ""
+      }
+      
+      const route = isEditMode ? "editDPP" : "createDPP"
+
+      const response = await signedFetch({
+        url: `${api_address}/dpp/${route}`,
+        message: `create:dpp:${publicKey}`,
+        secretKey: ownerKey,
+        method: "POST",
+        body: isEditMode ? editBody : dpp,
       })
 
       if (!response.ok) {
-        throw new Error("Erro ao salvar DPP")
+        throw new Error("Error to save DPP")
       }
 
-      showSnackbar(isEditMode ? "DPP atualizado com sucesso!" : "DPP criado com sucesso!", "success")
+      showSnackbar(isEditMode ? "DPP successfully updated!" : "DPP successfully created!", "success")
       navigate("/dashboard")
     } catch (error) {
       showSnackbar(error.message, "error")
@@ -171,20 +250,19 @@ const DppForm = ({ mode = "create" }) => {
     <Box sx={{ maxWidth: 800, mx: "auto" }}>
       <Paper elevation={2} sx={{ p: 4, borderRadius: 3 }}>
         <Typography variant="h4" color="primary" gutterBottom>
-          {isEditMode ? "Editar DPP" : "Criar Novo DPP"}
+          {isEditMode ? "Edit DPP" : "Create new DPP"}
         </Typography>
 
         <Box component="form" onSubmit={handleSubmit}>
-          {/* Basic Information */}
           <Typography variant="h6" sx={{ mt: 3, mb: 2 }}>
-            Informações Básicas
+            Basic Information
           </Typography>
 
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                label="Nome do Produto"
+                label="Product name"
                 value={formData.product_name}
                 onChange={(e) => handleInputChange("product_name", e.target.value)}
                 required
@@ -193,16 +271,7 @@ const DppForm = ({ mode = "create" }) => {
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                label="Fabricante"
-                value={formData.manufacturer}
-                onChange={(e) => handleInputChange("manufacturer", e.target.value)}
-                required
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Número de Série"
+                label="Serial Number"
                 value={formData.serial_number}
                 onChange={(e) => handleInputChange("serial_number", e.target.value)}
                 required
@@ -216,9 +285,7 @@ const DppForm = ({ mode = "create" }) => {
                   label="Status"
                   onChange={(e) => handleInputChange("status", e.target.value)}
                 >
-                  <MenuItem value="active">Ativo</MenuItem>
-                  <MenuItem value="inactive">Inativo</MenuItem>
-                  <MenuItem value="recalled">Recolhido</MenuItem>
+                  {getDPPStatusMenuItems()}
                 </Select>
               </FormControl>
             </Grid>
@@ -226,80 +293,50 @@ const DppForm = ({ mode = "create" }) => {
 
           <Divider sx={{ my: 4 }} />
 
-          {/* Components */}
           <Typography variant="h6" sx={{ mb: 2 }}>
-            Componentes
+            Components
           </Typography>
 
           <Grid container spacing={2} sx={{ mb: 2 }}>
-            <Grid item xs={12} sm={3}>
+            <Grid item xs={12} md={10}>
               <TextField
                 fullWidth
-                size="small"
-                label="Nome"
-                value={newComponent.name}
-                onChange={(e) => setNewComponent((prev) => ({ ...prev, name: e.target.value }))}
+                label="Component name or DPP Id"
+                value={newComponent}
+                onChange={(e) => setNewComponent(e.target.value)}
               />
             </Grid>
-            <Grid item xs={12} sm={3}>
-              <TextField
-                fullWidth
-                size="small"
-                label="Tipo"
-                value={newComponent.type}
-                onChange={(e) => setNewComponent((prev) => ({ ...prev, type: e.target.value }))}
-              />
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <TextField
-                fullWidth
-                size="small"
-                label="Fornecedor"
-                value={newComponent.supplier}
-                onChange={(e) => setNewComponent((prev) => ({ ...prev, supplier: e.target.value }))}
-              />
-            </Grid>
-            <Grid item xs={12} sm={2}>
-              <TextField
-                fullWidth
-                size="small"
-                label="Score"
-                type="number"
-                inputProps={{ min: 0, max: 100 }}
-                value={newComponent.sustainability_score}
-                onChange={(e) =>
-                  setNewComponent((prev) => ({ ...prev, sustainability_score: Number.parseInt(e.target.value) || 0 }))
-                }
-              />
-            </Grid>
-            <Grid item xs={12} sm={1}>
-              <IconButton onClick={addComponent} color="primary">
-                <Add />
-              </IconButton>
+            <Grid item xs={12} md={2}>
+              <Box
+                sx={{
+                  height: '100%',
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  alignItems: 'center',
+                }}
+              >
+                <IconButton onClick={addComponent} color="primary">
+                  <Add />
+                </IconButton>
+              </Box>
             </Grid>
           </Grid>
 
           {formData.components.length > 0 && (
             <TableContainer sx={{ mb: 3 }}>
-              <Table size="small">
+              <Table size="medium">
                 <TableHead>
                   <TableRow>
-                    <TableCell>Nome</TableCell>
-                    <TableCell>Tipo</TableCell>
-                    <TableCell>Fornecedor</TableCell>
-                    <TableCell>Score</TableCell>
+                    <TableCell>Component name or DPP ID</TableCell>
                     <TableCell width={50}></TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {formData.components.map((component, index) => (
-                    <TableRow key={index}>
-                      <TableCell>{component.name}</TableCell>
-                      <TableCell>{component.type}</TableCell>
-                      <TableCell>{component.supplier}</TableCell>
-                      <TableCell>{component.sustainability_score}%</TableCell>
+                  {formData.components.map((component) => (
+                    <TableRow>
+                      <TableCell>{component}</TableCell>
                       <TableCell>
-                        <IconButton size="small" onClick={() => removeComponent(index)} color="error">
+                        <IconButton size="small" onClick={() => removeComponent(component)} color="error">
                           <Delete />
                         </IconButton>
                       </TableCell>
@@ -312,39 +349,60 @@ const DppForm = ({ mode = "create" }) => {
 
           <Divider sx={{ my: 4 }} />
 
-          {/* Permissions */}
           <Typography variant="h6" sx={{ mb: 2 }}>
-            Permissões
+            Permissions
           </Typography>
 
-          <Grid container spacing={2} sx={{ mb: 2 }}>
-            <Grid item xs={12} sm={4}>
-              <TextField
-                fullWidth
-                size="small"
-                label="Papel"
-                value={newPermission.role}
-                onChange={(e) => setNewPermission((prev) => ({ ...prev, role: e.target.value }))}
-              />
-            </Grid>
-            <Grid item xs={12} sm={4}>
+          <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
+            <Grid item xs={12} md={3}>
               <FormControl fullWidth size="small">
-                <InputLabel>Escopo</InputLabel>
+                <InputLabel>Role</InputLabel>
                 <Select
-                  value={newPermission.scope}
-                  label="Escopo"
-                  onChange={(e) => setNewPermission((prev) => ({ ...prev, scope: e.target.value }))}
+                  value={newPermission.role}
+                  label="Role"
+                  onChange={(e) => setNewPermission((prev) => ({ ...prev, role: e.target.value }))}
                 >
-                  <MenuItem value="read_only">Somente Leitura</MenuItem>
-                  <MenuItem value="basic_info">Informações Básicas</MenuItem>
-                  <MenuItem value="full_access">Acesso Completo</MenuItem>
+                  {getRoleMenuItems()}
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} sm={1}>
-              <IconButton onClick={addPermission} color="primary">
-                <Add />
-              </IconButton>
+
+            <Grid item xs={12} md={3}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Scope</InputLabel>
+                <Select
+                  value={newPermission.scope}
+                  label="Scope"
+                  onChange={(e) => setNewPermission((prev) => ({ ...prev, scope: e.target.value }))}
+                >
+                  {getScopeMenuItems()}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} md={4}>
+              <TextField
+                fullWidth
+                size="small"
+                label="User DID"
+                value={newPermission.user_did}
+                onChange={(e) => setNewPermission((prev) => ({ ...prev, user_did: e.target.value }))}
+              />
+            </Grid>
+
+            <Grid item xs={12} md={2}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  alignItems: 'center',
+                  height: '100%',
+                }}
+              >
+                <IconButton onClick={addPermission} color="primary">
+                  <Add />
+                </IconButton>
+              </Box>
             </Grid>
           </Grid>
 
@@ -353,16 +411,16 @@ const DppForm = ({ mode = "create" }) => {
               <Table size="small">
                 <TableHead>
                   <TableRow>
-                    <TableCell>Papel</TableCell>
-                    <TableCell>Escopo</TableCell>
+                    <TableCell>Role</TableCell>
+                    <TableCell>Scope</TableCell>
+                    <TableCell>User DID</TableCell>
                     <TableCell width={50}></TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {formData.permissions.map((permission, index) => (
                     <TableRow key={index}>
-                      <TableCell>{permission.role}</TableCell>
-                      <TableCell>{permission.scope}</TableCell>
+                      {getPermissionLine(permission)}
                       <TableCell>
                         <IconButton size="small" onClick={() => removePermission(index)} color="error">
                           <Delete />
@@ -375,18 +433,17 @@ const DppForm = ({ mode = "create" }) => {
             </TableContainer>
           )}
 
-          {/* Actions */}
           <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end", mt: 4 }}>
             <Button variant="outlined" startIcon={<Cancel />} onClick={() => navigate("/dashboard")}>
               Cancelar
             </Button>
             <LoadingButton type="submit" variant="contained" startIcon={<Save />} loading={loading}>
-              {isEditMode ? "Atualizar" : "Criar"} DPP
+              {isEditMode ? "Update" : "Create"} DPP
             </LoadingButton>
           </Box>
         </Box>
-      </Paper>
-    </Box>
+      </Paper >
+    </Box >
   )
 }
 

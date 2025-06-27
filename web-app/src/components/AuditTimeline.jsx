@@ -8,19 +8,15 @@ import {
   TimelineOppositeContent,
 } from "@mui/lab"
 import { Typography, Paper } from "@mui/material"
-import { Create, Update, Security, Info, CheckCircle } from "@mui/icons-material"
+import { Create, Update, Info } from "@mui/icons-material"
 
 const AuditTimeline = ({ auditLog }) => {
   const getActionIcon = (action) => {
     switch (action) {
-      case "dpp_created":
+      case "CREATE":
         return <Create />
-      case "status_updated":
+      case "UPDATE":
         return <Update />
-      case "permission_changed":
-        return <Security />
-      case "verified":
-        return <CheckCircle />
       default:
         return <Info />
     }
@@ -28,16 +24,12 @@ const AuditTimeline = ({ auditLog }) => {
 
   const getActionColor = (action) => {
     switch (action) {
-      case "dpp_created":
-        return "primary"
-      case "status_updated":
-        return "secondary"
-      case "permission_changed":
-        return "warning"
-      case "verified":
+      case "CREATE":
         return "success"
+      case "UPDATE":
+        return "secondary"
       default:
-        return "grey"
+        return "primary"
     }
   }
 
@@ -48,7 +40,7 @@ const AuditTimeline = ({ auditLog }) => {
   if (!auditLog || auditLog.length === 0) {
     return (
       <Typography color="text.secondary" align="center">
-        Nenhum registro de auditoria disponível
+        No log registered
       </Typography>
     )
   }
@@ -59,7 +51,7 @@ const AuditTimeline = ({ auditLog }) => {
         <TimelineItem key={index}>
           <TimelineOppositeContent color="text.secondary" sx={{ flex: 0.3 }}>
             <Typography variant="body2">{formatDate(entry.timestamp)}</Typography>
-            <Typography variant="caption">por {entry.actor}</Typography>
+            <Typography variant="caption">por {entry.signed_by}</Typography>
           </TimelineOppositeContent>
 
           <TimelineSeparator>
@@ -71,9 +63,6 @@ const AuditTimeline = ({ auditLog }) => {
             <Paper elevation={1} sx={{ p: 2, borderRadius: 2 }}>
               <Typography variant="subtitle2" color="primary">
                 {entry.action.replace("_", " ").toUpperCase()}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {entry.details}
               </Typography>
             </Paper>
           </TimelineContent>

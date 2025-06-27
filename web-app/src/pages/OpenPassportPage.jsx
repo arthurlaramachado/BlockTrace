@@ -1,5 +1,8 @@
 "use client"
 
+/* For time reasons, this page has been copied from passportViewer, instead of reusing it */
+/* Fix using global state would be a good idea */
+
 import { useState, useEffect } from "react"
 import {
   Paper,
@@ -20,10 +23,65 @@ import {
   Divider,
 } from "@mui/material"
 import { ExpandMore, Inventory, Security, Timeline } from "@mui/icons-material"
-import AuditTimeline from "./AuditTimeline"
+import { useParams } from "react-router-dom"
+import AuditTimeline from "../components/AuditTimeline"
 
-const PassportViewer = ({ dpp }) => {
+const OpenPassportPage = () => {
+  const { dpp_id } = useParams()
+  const [dpp, setDpp] = useState(undefined)
   const [error, setError] = useState(null)
+  const api_address = import.meta.env.VITE_API_ADDRESS
+
+  useEffect(() => {
+    if (dpp_id) {
+      const fetchDppData = async () => {
+        try {
+          const url = `${api_address}/dpp/readDPP?dpp_id=${dpp_id}`
+          const response = await fetch(url, { method: "GET" })
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch DPP data")
+          }
+
+          const res = await response.json()
+          const data = res.data
+
+          setDpp(data)
+        } catch (error) {
+          setError(error.message)
+        }
+      }
+
+      fetchDppData()
+    }
+  }, [dpp_id])
+
+  const getCreatedAt = (dpp) => {
+    const createLog = dpp.audit_log.find(log => log.action === "CREATE")
+    return new Date(createLog.timestamp).toLocaleString("pt-BR")
+  }
+
+  const getLastUpdatedAt = (dpp) => {
+    const updatedAt = new Date(dpp.updated_at)
+    if (!Array.isArray(dpp.audit_log) || dpp.audit_log.length === 0) {
+      return updatedAt.toLocaleString("pt-BR")
+    }
+
+    const latestAuditTimestamp = dpp.audit_log
+      .map(entry => new Date(entry.timestamp))
+      .reduce((latest, current) => (current > latest ? current : latest), updatedAt)
+
+    return latestAuditTimestamp.toLocaleString("pt-BR")
+  }
+
+  const getPermissionInfo = (permission) => {
+    const perm = permission.split(":")
+    return {
+      role: perm[0],
+      scope: perm[1],
+      did: perm[2]
+    }
+  }
 
   if (error && !dpp) {
     return (
@@ -34,35 +92,13 @@ const PassportViewer = ({ dpp }) => {
     )
   }
 
-  const getCreatedAt = (dpp) => {
-    const createLog = dpp.audit_log.find(log => log.action == "CREATE")
-    return createLog.timestamp.toLocaleString("pt-BR")
+  if (!dpp) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 6 }}>
+        <CircularProgress />
+      </Box>
+    )
   }
-
-  const getPermissionInfo = (permission) => {
-    const perm = permission.split(":")
-
-    return {
-      role: perm[0],
-      scope: perm[1],
-      did: perm[2]
-    }
-  }
-
-  function getLastUpdatedAt(dpp) {
-    const updatedAt = new Date(dpp.updated_at)
-
-    if (!Array.isArray(dpp.audit_log) || dpp.audit_log.length === 0) {
-      return updatedAt
-    }
-
-    const latestAuditTimestamp = dpp.audit_log
-      .map(entry => new Date(entry.timestamp))
-      .reduce((latest, current) => (current > latest ? current : latest), updatedAt)
-
-    return latestAuditTimestamp.toLocaleString("pt-BR")
-  }
-
 
   return (
     <Box sx={{ space: 3 }}>
@@ -76,36 +112,26 @@ const PassportViewer = ({ dpp }) => {
               {dpp.owner_did}
             </Typography>
           </Box>
-          <Chip label={dpp.status.toUpperCase()} color={"success"} size="large" />
+          <Chip label={dpp.status?.toUpperCase()} color="success" size="large" />
         </Box>
 
         <Divider sx={{ my: 2 }} />
 
         <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
           <Box>
-            <Typography variant="body2" color="text.secondary">
-              DPP ID
-            </Typography>
-            <Typography variant="body1" fontFamily="monospace">
-              {dpp.dpp_id}
-            </Typography>
+            <Typography variant="body2" color="text.secondary">DPP ID</Typography>
+            <Typography variant="body1" fontFamily="monospace">{dpp.dpp_id}</Typography>
           </Box>
           <Box>
-            <Typography variant="body2" color="text.secondary">
-              Serial Number
-            </Typography>
+            <Typography variant="body2" color="text.secondary">Serial Number</Typography>
             <Typography variant="body1">{dpp.serial_number}</Typography>
           </Box>
           <Box>
-            <Typography variant="body2" color="text.secondary">
-              Created at
-            </Typography>
+            <Typography variant="body2" color="text.secondary">Created at</Typography>
             <Typography variant="body1">{getCreatedAt(dpp)}</Typography>
           </Box>
           <Box>
-            <Typography variant="body2" color="text.secondary">
-              Updated at
-            </Typography>
+            <Typography variant="body2" color="text.secondary">Updated at</Typography>
             <Typography variant="body1">{getLastUpdatedAt(dpp)}</Typography>
           </Box>
         </Box>
@@ -167,9 +193,7 @@ const PassportViewer = ({ dpp }) => {
                     const { role, scope, did } = getPermissionInfo(permission)
                     return (
                       <TableRow key={index}>
-                        <TableCell>
-                          <Chip label={role} variant="outlined" />
-                        </TableCell>
+                        <TableCell><Chip label={role} variant="outlined" /></TableCell>
                         <TableCell>{scope}</TableCell>
                         <TableCell>{did}</TableCell>
                       </TableRow>
@@ -185,7 +209,8 @@ const PassportViewer = ({ dpp }) => {
           </TableContainer>
         </AccordionDetails>
       </Accordion>
-      < Accordion sx={{ borderRadius: 2 }}>
+
+      <Accordion sx={{ borderRadius: 2 }}>
         <AccordionSummary expandIcon={<ExpandMore />}>
           <Box sx={{ display: "flex", alignItems: "center" }}>
             <Timeline sx={{ mr: 1, color: "primary.main" }} />
@@ -195,11 +220,9 @@ const PassportViewer = ({ dpp }) => {
         <AccordionDetails>
           <AuditTimeline auditLog={dpp.audit_log} />
         </AccordionDetails>
-      </Accordion >
-
-
+      </Accordion>
     </Box>
   )
 }
 
-export default PassportViewer
+export default OpenPassportPage

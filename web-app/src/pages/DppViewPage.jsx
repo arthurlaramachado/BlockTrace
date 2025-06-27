@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { Box, Button, Fade, Typography, Alert } from "@mui/material"
-import { Edit, Delete, ArrowBack } from "@mui/icons-material"
+import { Box, Button, Fade, Typography, Alert, CircularProgress } from "@mui/material"
+import { Edit, ArrowBack } from "@mui/icons-material"
 import { useAuth } from "../contexts/AuthContext"
 import { useSnackbar } from "../contexts/SnackbarContext"
 import PassportViewer from "../components/PassportViewer"
+import TransferDPPButton from "../components/TransferDPPButton"
+import { getPublicKeyFromPrivateKey, signedFetch } from "../scripts/signTransaction"
 
 const DppViewPage = () => {
   const { dpp_id } = useParams()
@@ -14,32 +16,77 @@ const DppViewPage = () => {
   const { ownerKey } = useAuth()
   const { showSnackbar } = useSnackbar()
   const [isOwner, setIsOwner] = useState(false)
+  const [dpp, setDpp] = useState(undefined)
+  const api_address = import.meta.env.VITE_API_ADDRESS
 
   useEffect(() => {
-    // In a real app, you would verify ownership via API
-    setIsOwner(true) // For demo purposes
-  }, [dpp_id, ownerKey])
+    if (dpp_id) {
+      const fetchDppData = async () => {
+        try {
+          const url = `${api_address}/dpp/readDPP?dpp_id=${dpp_id}`
+          const response = await fetch(url, { method: "GET" })
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch DPP data")
+          }
+
+          const res = await response.json()
+          const data = res.data
+
+          setDpp(data)
+
+        } catch (error) {
+          showSnackbar("Error in loading DPP", "error")
+        }
+      }
+
+      fetchDppData()
+    }
+  }, [dpp_id])
+
+  useEffect(() => {
+    const publicKey = getPublicKeyFromPrivateKey(ownerKey)
+    if (dpp && dpp.owner_did == publicKey) setIsOwner(true)
+  }, [dpp_id, ownerKey, dpp])
 
   const handleEdit = () => {
     navigate(`/dpp/${dpp_id}/edit`)
   }
 
-  const handleDelete = async () => {
-    if (window.confirm("Tem certeza que deseja excluir este DPP? Esta ação não pode ser desfeita.")) {
+  const handleTransfer = async (new_owner_did) => {
+    if (window.confirm("Are you sure you want to transfer this DPP?")) {
       try {
-        await fetch(`/api/dpp/${dpp_id}`, {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${ownerKey}`,
-          },
-        })
+        const message = `transfer:${dpp_id}:${new_owner_did}`;
 
-        showSnackbar("DPP excluído com sucesso", "success")
+        await signedFetch({
+          url: `${api_address}/dpp/transferDPP`,
+          method: "POST",
+          message,
+          secretKey: ownerKey,
+          body: {
+            dpp_id,
+            new_owner_did
+          }
+        }).then(res => {
+          if (res.ok) alert('Transferência enviada com sucesso!');
+          else alert('Erro ao transferir DPP');
+        });
+
+        showSnackbar("DPP successfully transfered", "success")
         navigate("/dashboard")
       } catch (error) {
-        showSnackbar("Erro ao excluir DPP", "error")
+        showSnackbar("Error in transfering DPP", "error")
+        console.log(error)
       }
     }
+  }
+
+  if (dpp == undefined) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 6 }}>
+        <CircularProgress />
+      </Box>
+    )
   }
 
   return (
@@ -47,28 +94,28 @@ const DppViewPage = () => {
       <Box>
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
           <Button startIcon={<ArrowBack />} onClick={() => navigate("/dashboard")} sx={{ textTransform: "none" }}>
-            Voltar ao Dashboard
+            Back to dashbord
           </Button>
 
           {isOwner && (
             <Box sx={{ display: "flex", gap: 1 }}>
               <Button variant="outlined" startIcon={<Edit />} onClick={handleEdit}>
-                Editar
+                Edit
               </Button>
-              <Button variant="outlined" color="error" startIcon={<Delete />} onClick={handleDelete}>
-                Excluir
-              </Button>
+              <TransferDPPButton onTransfer={(new_owner_did) => {
+                handleTransfer(new_owner_did)
+              }} />
             </Box>
           )}
         </Box>
 
         {isOwner && (
           <Alert severity="info" sx={{ mb: 3, borderRadius: 2 }}>
-            <Typography variant="body2">Você é o proprietário deste DPP e pode editá-lo ou excluí-lo.</Typography>
+            <Typography variant="body2">You are the owner of this product and can transfer or edit it.</Typography>
           </Alert>
         )}
 
-        <PassportViewer dppId={dpp_id} />
+        <PassportViewer dpp={dpp} />
       </Box>
     </Fade>
   )

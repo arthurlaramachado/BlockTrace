@@ -1,7 +1,7 @@
 "use client"
 import { useParams } from "react-router-dom"
 import { Fade } from "@mui/material"
-import PassportViewer from "../components/PassportViewer"
+import OpenPassportPage from "./OpenPassportPage"
 
 const PassportPage = () => {
   const { dpp_id } = useParams()
@@ -9,7 +9,7 @@ const PassportPage = () => {
   return (
     <Fade in timeout={600}>
       <div>
-        <PassportViewer dppId={dpp_id} />
+        <OpenPassportPage dppId={dpp_id} />
       </div>
     </Fade>
   )
