@@ -4,7 +4,7 @@ import cors from 'cors'
 import dppRoutes from './routes/dppRoutes.js'
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT;
 
 app.use(cors({
   origin:'*' // port that is running the front-end
